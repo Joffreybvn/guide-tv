@@ -1,12 +1,18 @@
 
-from apscheduler.schedulers.blocking import BlockingScheduler
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from b2sdk.v1 import InMemoryAccountInfo, B2Api
+from functools import partial
+from threading import Thread
 from pytz import timezone
+from flask import Flask
 from os import environ
 import subprocess
 
+# Initialize the dummy API
+app = Flask(__name__)
+
 # Initialize apscheduler and setup the timezone.
-scheduler = BlockingScheduler()
+scheduler = AsyncIOScheduler()
 tz = timezone('Europe/Brussels')
 
 # Initialize BackBlaze B2 API
@@ -17,6 +23,7 @@ api = B2Api(info)
 B2_ID = environ.get('B2_ID')
 B2_KEY = environ.get('B2_KEY')
 B2_BUCKET = environ.get('B2_BUCKET')
+PORT = int(environ.get("PORT", 3000))
 
 
 def grab_guide():
@@ -41,15 +48,29 @@ def upload_guide():
     print("[+] Guide upload completed")
 
 
+# Schedule a grab every day @ 1h50
+@scheduler.scheduled_job('cron', day_of_week="mon-sun", hour=1, minute=30, timezone=tz)
+def update_guide():
+
+    print("[!] Guide retrieval Started")
+    grab_guide()
+    upload_guide()
+
+
+# Create a "Hello World" route on root
+@app.route('/')
+def hello_world():
+    return 'Hello, World!'
+
+
 if __name__ == '__main__':
 
-    # Schedule a grab every day @ 1h50
-    @scheduler.scheduled_job('cron', day_of_week="mon-sun", hour=1, minute=30, timezone=tz)
-    def update_guide():
+    # Start the dummy API
+    partial_run = partial(app.run, host="0.0.0.0", port=PORT, debug=False, use_reloader=False)
+    Thread(target=partial_run).start()
 
-        print("[!] Guide retrieval Started")
-        grab_guide()
-        upload_guide()
+    # Init the scheduler
+    scheduler.start()
 
     # Run a grab on script start
     update_guide()
