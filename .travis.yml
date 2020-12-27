@@ -1,0 +1,18 @@
+language: python
+python:
+  - 3.8
+services:
+  - docker
+
+before_script:
+  - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
+
+script:
+  - docker build -t joffreybvn/tv-guide:latest .
+
+deploy:
+  provider: script
+  script:
+    docker push joffreybvn/tv-guide:latest;
+  on:
+    branch: master
