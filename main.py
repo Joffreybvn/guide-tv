@@ -9,10 +9,6 @@ import subprocess
 scheduler = BlockingScheduler()
 tz = timezone('Europe/Brussels')
 
-# Initialize BackBlaze B2 API
-info = InMemoryAccountInfo()
-api = B2Api(info)
-
 # Load the environment variables
 B2_ID = environ.get('B2_ID')
 B2_KEY = environ.get('B2_KEY')
@@ -33,6 +29,10 @@ def grab_guide():
 def upload_guide():
     """Upload the "all.xml" file to BackBlaze B2"""
 
+    # Initialize BackBlaze B2 API
+    info = InMemoryAccountInfo()
+    api = B2Api(info)
+
     # Login to BackBlaze
     api.authorize_account("production", B2_ID, B2_KEY)
     bucket = api.get_bucket_by_name(B2_BUCKET)
@@ -43,7 +43,7 @@ def upload_guide():
 
 
 # Schedule a grab every day @ 1h50
-@scheduler.scheduled_job('cron', day_of_week="mon-sun", hour=1, minute=30, timezone=tz)
+@scheduler.scheduled_job('cron', day_of_week="*", hour=1, minute=30, timezone=tz)
 def update_guide():
 
     print("[!] Guide retrieval Started")
