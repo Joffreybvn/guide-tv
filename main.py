@@ -1,18 +1,12 @@
 
-from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from apscheduler.schedulers.blocking import BlockingScheduler
 from b2sdk.v1 import InMemoryAccountInfo, B2Api
-from functools import partial
-from threading import Thread
 from pytz import timezone
-from flask import Flask
 from os import environ
 import subprocess
 
-# Initialize the dummy API
-app = Flask(__name__)
-
 # Initialize apscheduler and setup the timezone.
-scheduler = AsyncIOScheduler()
+scheduler = BlockingScheduler()
 tz = timezone('Europe/Brussels')
 
 # Initialize BackBlaze B2 API
@@ -57,20 +51,10 @@ def update_guide():
     upload_guide()
 
 
-# Create a "Hello World" route on root
-@app.route('/')
-def hello_world():
-    return 'Hello, World!'
-
-
 if __name__ == '__main__':
-
-    # Start the dummy API
-    partial_run = partial(app.run, host="0.0.0.0", port=PORT, debug=False, use_reloader=False)
-    Thread(target=partial_run).start()
-
-    # Init the scheduler
-    scheduler.start()
 
     # Run a grab on script start
     update_guide()
+
+    # Init the scheduler
+    scheduler.start()
